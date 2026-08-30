@@ -16,6 +16,30 @@ Entities are created only when the device and its advertised cloud capabilities 
 - Device metadata, firmware version, and Home Assistant device-registry integration
 - Dynamic device discovery and removal reconciliation
 
+## Notable key changes from Beatbot's official integration
+
+This community-maintained version is derived from the
+[official Beatbot integration](https://github.com/Beatbot-Robotics/ha_beatbot),
+with the following notable changes relative to upstream commit `b9bfe125`
+(`v0.0.2`):
+
+- Adds Home Assistant OAuth reauthentication for expired or revoked credentials
+  without requiring users to delete and recreate the integration.
+- Verifies the JWT account identifier (`sub`) during reauthentication and rejects
+  authorization with a different Beatbot account.
+- Validates replacement credentials against the regional device API before
+  updating the config entry, preserving existing credentials if validation fails.
+- Maps clean-base-station work status `0` to `cleaning` instead of exposing an
+  unknown status.
+- Adds reauthentication, account-mismatch, status-mapping, and translation
+  contract tests; the complete suite contains 125 passing tests.
+- Validates this custom release against Home Assistant 2026.2.3 and provides
+  HACS-specific documentation, release notes, licensing, and attribution.
+
+Upstream may evolve independently. The related
+[Home Assistant Core contribution](https://github.com/home-assistant/core/pull/177108)
+remains the proposed path toward a built-in Beatbot integration.
+
 ## Requirements
 
 - Home Assistant 2026.2.3 or newer (the automated suite is validated against 2026.2.3)
