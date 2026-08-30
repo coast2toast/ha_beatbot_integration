@@ -10,7 +10,7 @@ from unittest.mock import AsyncMock, Mock
 from aiohttp import ClientError
 import pytest
 from beatbot_cloud import BeatbotAuthenticationError, BeatbotConnectionError
-from homeassistant.config_entries import SOURCE_USER
+from homeassistant.config_entries import SOURCE_REAUTH, SOURCE_USER
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import config_entry_oauth2_flow
@@ -47,11 +47,6 @@ def test_oauth_implementation_metadata(hass: HomeAssistant) -> None:
 
     assert implementation.name == "Beatbot"
     assert implementation.extra_authorize_data["scope"] == "device:info"
-
-
-def test_flow_does_not_define_reauth_step() -> None:
-    """Keep the custom flow aligned with the reviewed Core integration."""
-    assert "async_step_reauth" not in BeatbotConfigFlow.__dict__
 
 
 async def test_registers_local_implementation_when_missing(
@@ -178,6 +173,126 @@ async def _start_user_flow(hass: HomeAssistant) -> dict:
     return await hass.config_entries.flow.async_configure(
         result["flow_id"], {"implementation": DOMAIN}
     )
+
+
+async def _start_reauth_flow(hass: HomeAssistant, entry: MockConfigEntry) -> dict:
+    """Drive reauthentication to the OAuth external step."""
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": SOURCE_REAUTH, "entry_id": entry.entry_id},
+        data=entry.data,
+    )
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "reauth_confirm"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {}
+    )
+    if result["type"] is FlowResultType.FORM:
+        assert result["step_id"] == "pick_implementation"
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"implementation": DOMAIN}
+        )
+    assert result["type"] is FlowResultType.EXTERNAL_STEP
+    return result
+
+
+@pytest.mark.usefixtures("enable_custom_integrations")
+async def test_reauth_updates_matching_account_and_reloads(
+    hass: HomeAssistant,
+) -> None:
+    """Reauthentication replaces credentials for the same Beatbot account."""
+    old_token = _make_token("account-1", region="cn")
+    new_token = _make_token("account-1", nonce="new", region="eu")
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="account-1",
+        title="Beatbot",
+        source=SOURCE_USER,
+        data={
+            "auth_implementation": DOMAIN,
+            "region": "cn",
+            "token": old_token,
+        },
+    )
+    entry.add_to_hass(hass)
+    _register_mock_impl(hass, new_token)
+
+    result = await _start_reauth_flow(hass, entry)
+    result = await _complete_external_auth(hass, result["flow_id"])
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reauth_successful"
+    assert entry.data["token"]["access_token"] == new_token["access_token"]
+    assert entry.data["region"] == "eu"
+
+
+@pytest.mark.usefixtures("enable_custom_integrations")
+async def test_reauth_rejects_different_account(hass: HomeAssistant) -> None:
+    """Reauthentication cannot replace an entry with another account."""
+    old_token = _make_token("account-1", region="cn")
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="account-1",
+        title="Beatbot",
+        source=SOURCE_USER,
+        data={
+            "auth_implementation": DOMAIN,
+            "region": "cn",
+            "token": old_token,
+        },
+    )
+    entry.add_to_hass(hass)
+    _register_mock_impl(hass, _make_token("account-2", region="cn"))
+
+    result = await _start_reauth_flow(hass, entry)
+    result = await _complete_external_auth(hass, result["flow_id"])
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "wrong_account"
+    assert entry.data["token"]["access_token"] == old_token["access_token"]
+
+
+@pytest.mark.parametrize(
+    ("error", "reason"),
+    [
+        (BeatbotAuthenticationError(), "oauth_error"),
+        (BeatbotConnectionError(), "cannot_connect"),
+    ],
+)
+@pytest.mark.usefixtures("enable_custom_integrations")
+async def test_reauth_preserves_credentials_when_validation_fails(
+    hass: HomeAssistant,
+    mock_resource_api: AsyncMock,
+    error: Exception,
+    reason: str,
+) -> None:
+    """A failed resource check must not replace the working entry data."""
+    old_token = _make_token("account-1", region="cn")
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="account-1",
+        title="Beatbot",
+        source=SOURCE_USER,
+        data={
+            "auth_implementation": DOMAIN,
+            "region": "cn",
+            "token": old_token,
+        },
+    )
+    entry.add_to_hass(hass)
+    _register_mock_impl(
+        hass, _make_token("account-1", nonce="new", region="eu")
+    )
+    mock_resource_api.side_effect = error
+
+    result = await _start_reauth_flow(hass, entry)
+    result = await _complete_external_auth(hass, result["flow_id"])
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == reason
+    assert entry.data["token"]["access_token"] == old_token["access_token"]
+    assert entry.data["region"] == "cn"
 
 
 @pytest.mark.usefixtures("enable_custom_integrations")

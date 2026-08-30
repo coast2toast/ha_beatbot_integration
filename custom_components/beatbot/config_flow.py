@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 import logging
 from typing import Any
 
@@ -86,6 +87,26 @@ class BeatbotConfigFlow(
         await self._async_register_implementation()
         return await self.async_step_pick_implementation(user_input)
 
+    async def async_step_reauth(
+        self, entry_data: Mapping[str, Any]
+    ) -> config_entries.ConfigFlowResult:
+        """Start reauthentication after Beatbot rejects stored credentials."""
+        await self._async_register_implementation()
+        return await self.async_step_reauth_confirm()
+
+    async def async_step_reauth_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        """Ask the user to authorize the existing Beatbot account again."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="reauth_confirm",
+                description_placeholders={
+                    "account": self._get_reauth_entry().title,
+                },
+            )
+        return await self.async_step_user()
+
     async def async_oauth_create_entry(
         self, data: dict
     ) -> config_entries.ConfigFlowResult:
@@ -108,6 +129,14 @@ class BeatbotConfigFlow(
             data["region"] = str(region)
         if data.get("region") not in REGION_API_BASE_URL:
             return self.async_abort(reason="unknown_region")
+
+        if self.source == config_entries.SOURCE_REAUTH:
+            self._abort_if_unique_id_mismatch(reason="wrong_account")
+            if abort_result := await self._async_validate_resource_api(data):
+                return abort_result
+            return self.async_update_reload_and_abort(
+                self._get_reauth_entry(), data=data
+            )
 
         self._abort_if_unique_id_configured()
         if abort_result := await self._async_validate_resource_api(data):

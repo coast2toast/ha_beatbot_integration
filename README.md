@@ -18,7 +18,7 @@ Entities are created only when the device and its advertised cloud capabilities 
 
 ## Requirements
 
-- Home Assistant 2026.7.0 or newer
+- Home Assistant 2026.2.3 or newer (the automated suite is validated against 2026.2.3)
 - A supported Beatbot device associated with a Beatbot cloud account
 - Home Assistant must have internet access and a valid external callback URL for OAuth
 - A Beatbot account in a supported region: North America (`na`), Europe (`eu`), or mainland China (`cn`)

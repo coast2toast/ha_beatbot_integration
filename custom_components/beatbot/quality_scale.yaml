@@ -13,7 +13,7 @@ rules:
   config-flow: done
   config-flow-test-coverage:
     status: done
-    comment: User flow, duplicate account, missing/unknown region, resource API validation, and OAuth error/timeout paths are covered.
+    comment: User flow, reauthentication with account-mismatch protection, duplicate account, missing/unknown region, resource API validation, and OAuth error/timeout paths are covered.
   dependency-transparency: done
   docs-actions:
     status: exempt
@@ -22,8 +22,8 @@ rules:
     status: exempt
     comment: This integration does not provide conditions.
   docs-high-level-description:
-    status: todo
-    comment: Add the official integration documentation page in home-assistant.io.
+    status: done
+    comment: The HACS repository README provides the high-level integration documentation.
   docs-installation-instructions:
     status: done
     comment: Installation, OAuth setup, and supported-region instructions are documented in README.md.
