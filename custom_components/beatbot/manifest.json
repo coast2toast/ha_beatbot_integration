@@ -4,10 +4,10 @@
   "codeowners": ["@coast2toast"],
   "config_flow": true,
   "dependencies": [],
-  "documentation": "https://github.com/coast2toast/home-assistant-projects/blob/main/README.md",
+  "documentation": "https://github.com/coast2toast/ha_beatbot_integration/blob/main/README.md",
   "integration_type": "hub",
   "iot_class": "cloud_push",
-  "issue_tracker": "https://github.com/coast2toast/home-assistant-projects/issues",
+  "issue_tracker": "https://github.com/coast2toast/ha_beatbot_integration/issues",
   "loggers": ["beatbot_cloud"],
   "requirements": ["beatbot-cloud==0.4.1"],
   "version": "v0.0.2"
