@@ -1,0 +1,16 @@
+Beatbot Home Assistant Integration
+Copyright 2026 coast2toast and contributors
+
+This project contains code derived from the Beatbot integration contribution to
+Home Assistant Core:
+https://github.com/home-assistant/core/pull/177108
+
+Home Assistant Core is licensed under the Apache License, Version 2.0.
+Modifications made in this repository are also distributed under the Apache
+License, Version 2.0. See LICENSE for the complete terms.
+
+The integration uses the separately distributed beatbot-cloud Python package.
+Beatbot names, product names, and logos are trademarks of their respective
+owners. Their use here is solely to identify compatible products. This project
+is an independent community integration and is not affiliated with or endorsed
+by Beatbot unless explicitly stated otherwise.

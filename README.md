@@ -27,6 +27,8 @@ The integration depends on `beatbot-cloud==0.4.1`; Home Assistant installs this 
 
 ## Installation
 
+Current release: **v0.0.3**. See [CHANGELOG.md](CHANGELOG.md) for release notes.
+
 ### HACS custom repository
 
 1. Open HACS in Home Assistant.
@@ -81,3 +83,10 @@ python3 -m json.tool custom_components/beatbot/strings.json >/dev/null
 ## Upstream
 
 The implementation is based on the official Beatbot Robotics custom integration at <https://github.com/Beatbot-Robotics/ha_beatbot> and uses the official Apache-2.0 `beatbot-cloud` client. The related Home Assistant Core contribution is <https://github.com/home-assistant/core/pull/177108>.
+
+## License and trademarks
+
+This project is distributed under the [Apache License 2.0](LICENSE). See
+[NOTICE](NOTICE) for upstream attribution. Beatbot names, product names, and
+logos are trademarks of their respective owners and are used only to identify
+compatible products. This is an independent community integration.

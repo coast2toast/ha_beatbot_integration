@@ -10,5 +10,5 @@
   "issue_tracker": "https://github.com/coast2toast/ha_beatbot_integration/issues",
   "loggers": ["beatbot_cloud"],
   "requirements": ["beatbot-cloud==0.4.1"],
-  "version": "v0.0.2"
+  "version": "v0.0.3"
 }
