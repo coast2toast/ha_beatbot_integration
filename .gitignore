@@ -30,3 +30,6 @@ config/secrets.yaml
 dist/
 build/
 *.egg-info/
+
+# Hermes Kanban worktrees
+.worktrees/
