@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2026.08.31.2
 
 - Reach the self-assessed Silver Home Assistant Integration Quality Scale tier.
 - Add explicit entity-platform parallel-update limits.
