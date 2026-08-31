@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.0.3 — 2026-08-30
+## 2026.08.31
 
 - Add OAuth reauthentication for expired or revoked Beatbot credentials.
 - Reject reauthentication with a different Beatbot account.
@@ -9,6 +9,9 @@
 - Correct repository documentation and issue-tracker URLs.
 - Add Apache-2.0 licensing and attribution for public distribution.
 - Validate the complete suite: 125 tests passed on Home Assistant 2026.2.3.
+- Add automated HACS Action and Home Assistant hassfest validation.
+- Document HACS custom-repository readiness and the self-assessed Bronze
+  Integration Quality Scale tier.
 
 ## v0.0.2
 

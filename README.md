@@ -68,7 +68,7 @@ The integration depends on `beatbot-cloud==0.4.1`; Home Assistant installs this 
 
 ## Installation
 
-Current release: **v0.0.3**. See [CHANGELOG.md](CHANGELOG.md) for release notes.
+Current release: **2026.08.31**. See [CHANGELOG.md](CHANGELOG.md) for release notes.
 
 ### HACS custom repository
 
