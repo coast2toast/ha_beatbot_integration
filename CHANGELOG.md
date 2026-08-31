@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026.08.31.3
+
+- Reach the self-assessed Gold Home Assistant Integration Quality Scale tier.
+- Add privacy-redacted config-entry diagnostics and semantic icon translations.
+- Document supported devices and functions, data updates, automation examples,
+  use cases, known limitations, and troubleshooting.
+- Pin every GitHub Actions dependency to an immutable commit.
+
 ## 2026.08.31.2
 
 - Reach the self-assessed Silver Home Assistant Integration Quality Scale tier.

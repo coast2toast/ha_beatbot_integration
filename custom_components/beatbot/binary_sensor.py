@@ -26,6 +26,7 @@ class BeatbotOnlineSensor(BeatbotEntity, BinarySensorEntity):
 
     _attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
     _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_entity_registry_enabled_default = False
     _attr_translation_key = "online"
 
     def __init__(
@@ -55,6 +56,7 @@ class BeatbotChargingSensor(BeatbotEntity, BinarySensorEntity):
 
     _attr_device_class = BinarySensorDeviceClass.BATTERY_CHARGING
     _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_entity_registry_enabled_default = False
     _attr_translation_key = "charging"
 
     def __init__(

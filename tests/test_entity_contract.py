@@ -96,6 +96,27 @@ def test_supported_platforms_are_unchanged() -> None:
     ]
 
 
+def test_secondary_diagnostics_are_disabled_by_default() -> None:
+    """Avoid recording noisy or redundant diagnostic entities unless requested."""
+    entities = _entities(_coordinator())
+    defaults = {
+        type(entity).__name__: entity.entity_registry_enabled_default
+        for entity in entities
+    }
+
+    assert defaults["BeatbotStatusSensor"] is False
+    assert defaults["BeatbotOnlineSensor"] is False
+    assert defaults["BeatbotChargingSensor"] is False
+    for primary_or_actionable in (
+        "BeatbotPoolVacuum",
+        "BeatbotBatterySensor",
+        "BeatbotErrorSensor",
+        "BeatbotWorkModeSelect",
+        "BeatbotSwitch",
+    ):
+        assert defaults[primary_or_actionable] is True
+
+
 def test_entity_unique_ids_and_translation_keys_are_unchanged() -> None:
     """Prevent infrastructure updates from migrating or renaming entities."""
     entities = _entities(_coordinator())
@@ -232,6 +253,7 @@ def test_device_info_exposes_registry_metadata() -> None:
     coordinator = _coordinator()
     device = coordinator.data[DEVICE_ID]
     device.name = "AquaSense"
+    device.model = "AquaSense 2 Ultra"
     device.versions = [
         SimpleNamespace(channel=1, version="1.2.3"),
         SimpleNamespace(channel=2, version=""),
@@ -242,5 +264,15 @@ def test_device_info_exposes_registry_metadata() -> None:
     assert info["identifiers"] == {("beatbot", DEVICE_ID)}
     assert info["name"] == "AquaSense"
     assert info["manufacturer"] == "Beatbot"
-    assert info["model"] == "sblekiy3t188s9ql"
+    assert info["model"] == "AquaSense 2 Ultra"
     assert info["sw_version"] == "ch1:1.2.3"
+
+
+def test_device_info_falls_back_to_product_id_without_model() -> None:
+    """Keep useful registry metadata when the cloud omits a marketing model."""
+    coordinator = _coordinator()
+    coordinator.data[DEVICE_ID].model = ""
+
+    info = BeatbotStatusSensor(coordinator, DEVICE_ID).device_info
+
+    assert info["model"] == "sblekiy3t188s9ql"

@@ -8,7 +8,7 @@ rules:
     comment: WebSocket push is primary; a 10 minute coordinator poll reconciles discovery and missed events.
   brands:
     status: done
-    comment: The custom integration includes local icon and logo assets for HACS; a Home Assistant Brands submission remains necessary for Core inclusion.
+    comment: The custom integration ships icon.png and logo.png in its local brand directory, supported for custom integrations since Home Assistant 2026.3; a Brands repository submission is needed only if contributed to Core.
   common-modules: done
   config-flow: done
   config-flow-test-coverage:
@@ -70,3 +70,50 @@ rules:
   test-coverage:
     status: done
     comment: Every non-empty integration module exceeds 95 percent statement coverage; CI also enforces a 96 percent aggregate floor.
+
+  # Gold
+  devices:
+    status: done
+    comment: Every entity supplies a device-registry identifier, manufacturer, model, name, and firmware through shared device_info.
+  diagnostics:
+    status: done
+    comment: Config-entry diagnostics expose coordinator, event-stream, capability, firmware, and runtime state while redacting OAuth/account data and omitting device identifiers and names.
+  discovery-update-info:
+    status: exempt
+    comment: This cloud OAuth integration has no local discovery information such as a host or address to update.
+  discovery:
+    status: exempt
+    comment: Beatbot account devices cannot be discovered before OAuth authorization and no supported local discovery protocol is available.
+  docs-data-update: done
+  docs-examples: done
+  docs-known-limitations: done
+  docs-supported-devices: done
+  docs-supported-functions: done
+  docs-troubleshooting: done
+  docs-use-cases: done
+  dynamic-devices:
+    status: done
+    comment: WebSocket topology events and periodic discovery schedule platform reloads when devices are added or removed.
+  entity-category:
+    status: done
+    comment: State, battery, error, connectivity, and charging entities are categorized as diagnostic; user controls remain primary entities.
+  entity-device-class: done
+  entity-disabled-by-default:
+    status: done
+    comment: Detailed work status, online connectivity, and charging diagnostics are disabled by default; primary controls, battery, and actionable error entities remain enabled.
+  entity-translations: done
+  exception-translations:
+    status: done
+    comment: Validation, authentication, offline-device, and connection failures use translated Home Assistant exceptions in every shipped locale.
+  icon-translations:
+    status: done
+    comment: icons.json provides semantic icons and useful state-specific icons for translation-key entities that do not rely on device-class icons.
+  reconfiguration-flow:
+    status: exempt
+    comment: There are no user-editable config-flow settings; account and region come from OAuth and credential replacement uses reauthentication.
+  repair-issues:
+    status: done
+    comment: Runtime failures were audited; authentication is actionable through reauthentication, while cloud outages and unsupported models are not user-fixable and must not create Repairs issues.
+  stale-devices:
+    status: done
+    comment: Removal events detach devices immediately and polling removes a device only after three consecutive successful discovery misses.

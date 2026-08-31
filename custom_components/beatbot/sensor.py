@@ -57,6 +57,7 @@ class BeatbotStatusSensor(BeatbotEntity, SensorEntity):
 
     _attr_device_class = SensorDeviceClass.ENUM
     _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_entity_registry_enabled_default = False
     _attr_translation_key = "work_status"
 
     def __init__(

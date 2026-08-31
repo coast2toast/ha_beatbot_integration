@@ -1,0 +1,45 @@
+{
+  "entity": {
+    "select": {
+      "work_mode": {
+        "default": "mdi:format-list-bulleted"
+      }
+    },
+    "sensor": {
+      "error": {
+        "default": "mdi:alert-circle-outline",
+        "state": {
+          "none": "mdi:check-circle-outline"
+        }
+      },
+      "work_status": {
+        "default": "mdi:robot-vacuum",
+        "state": {
+          "charging": "mdi:battery-charging",
+          "cleaning": "mdi:robot-vacuum",
+          "goto_charge": "mdi:home-import-outline",
+          "standby": "mdi:power-standby"
+        }
+      }
+    },
+    "switch": {
+      "child_lock": {
+        "default": "mdi:account-lock"
+      },
+      "voice_disturb": {
+        "default": "mdi:volume-off"
+      }
+    },
+    "vacuum": {
+      "beatbot_clean_base_station_vacuum": {
+        "default": "mdi:home-automation"
+      },
+      "beatbot_lawn_mower_vacuum": {
+        "default": "mdi:robot-mower"
+      },
+      "beatbot_pool_vacuum": {
+        "default": "mdi:robot-vacuum"
+      }
+    }
+  }
+}

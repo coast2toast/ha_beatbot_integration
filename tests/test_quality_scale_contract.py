@@ -1,4 +1,4 @@
-"""Contract tests for self-assessed Silver quality requirements."""
+"""Contract tests for self-assessed Gold quality requirements."""
 
 from pathlib import Path
 
@@ -19,6 +19,30 @@ SILVER_RULES = {
     "test-coverage",
 }
 
+GOLD_RULES = {
+    "devices",
+    "diagnostics",
+    "discovery-update-info",
+    "discovery",
+    "docs-data-update",
+    "docs-examples",
+    "docs-known-limitations",
+    "docs-supported-devices",
+    "docs-supported-functions",
+    "docs-troubleshooting",
+    "docs-use-cases",
+    "dynamic-devices",
+    "entity-category",
+    "entity-device-class",
+    "entity-disabled-by-default",
+    "entity-translations",
+    "exception-translations",
+    "icon-translations",
+    "reconfiguration-flow",
+    "repair-issues",
+    "stale-devices",
+}
+
 
 def test_platforms_declare_parallel_update_limits() -> None:
     """Every entity platform must explicitly choose its concurrency limit."""
@@ -37,6 +61,19 @@ def test_quality_scale_declares_every_silver_rule_done() -> None:
 
     assert SILVER_RULES <= quality_scale.keys()
     for rule in SILVER_RULES:
+        value = quality_scale[rule]
+        status = value if isinstance(value, str) else value["status"]
+        assert status in {"done", "exempt"}, rule
+
+
+def test_quality_scale_declares_every_gold_rule_complete() -> None:
+    """The self-assessed Gold claim must have no missing or pending rule."""
+    quality_scale = yaml.safe_load(
+        Path("custom_components/beatbot/quality_scale.yaml").read_text(encoding="utf-8")
+    )["rules"]
+
+    assert GOLD_RULES <= quality_scale.keys()
+    for rule in GOLD_RULES:
         value = quality_scale[rule]
         status = value if isinstance(value, str) else value["status"]
         assert status in {"done", "exempt"}, rule
