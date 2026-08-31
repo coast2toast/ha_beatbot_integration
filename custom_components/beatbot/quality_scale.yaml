@@ -7,8 +7,8 @@ rules:
     status: done
     comment: WebSocket push is primary; a 10 minute coordinator poll reconciles discovery and missed events.
   brands:
-    status: todo
-    comment: Add Beatbot icon/logo to the Home Assistant Brands repository before Core submission.
+    status: done
+    comment: The custom integration includes local icon and logo assets for HACS; a Home Assistant Brands submission remains necessary for Core inclusion.
   common-modules: done
   config-flow: done
   config-flow-test-coverage:

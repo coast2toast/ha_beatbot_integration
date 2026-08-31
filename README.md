@@ -1,5 +1,8 @@
 # Beatbot Home Assistant Integration
 
+[![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
+[![Quality Scale](https://img.shields.io/badge/Quality%20Scale-Bronze-CD7F32.svg)](https://developers.home-assistant.io/docs/core/integration-quality-scale/)
+
 A custom Home Assistant integration for supported Beatbot cloud-connected pool cleaners and cleaning base stations.
 
 The integration uses Beatbot OAuth 2.0 with PKCE, the `beatbot-cloud` Python client, WebSocket push events for near-real-time state, and a low-frequency cloud refresh for discovery and reconciliation.
@@ -48,6 +51,20 @@ remains the proposed path toward a built-in Beatbot integration.
 - A Beatbot account in a supported region: North America (`na`), Europe (`eu`), or mainland China (`cn`)
 
 The integration depends on `beatbot-cloud==0.4.1`; Home Assistant installs this dependency from `manifest.json`.
+
+## HACS and quality readiness
+
+- **HACS custom-repository ready** — the repository includes `hacs.json`, a
+  versioned integration manifest, local brand assets, a public release, and
+  automated HACS Action validation.
+- **Home Assistant validation** — hassfest runs with the HACS Action on pushes
+  to `main`, pull requests, a daily schedule, and manual dispatch.
+- **Integration Quality Scale: Bronze (self-assessed)** — all Bronze rules in
+  `custom_components/beatbot/quality_scale.yaml` are marked complete or exempt
+  with an explanation. This is a community assessment, not a Home Assistant
+  Core review or endorsement.
+- **Catalog status** — installable as a HACS custom repository; inclusion in
+  the default HACS catalog requires a separate submission and acceptance.
 
 ## Installation
 
