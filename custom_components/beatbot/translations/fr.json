@@ -171,8 +171,14 @@
     "device_offline": {
       "message": "{device} est hors ligne."
     },
+    "control_authentication_error": {
+      "message": "L’authentification Beatbot a expiré lors du contrôle de {device}. Réauthentifiez l’intégration et réessayez."
+    },
     "control_connection_error": {
       "message": "Impossible de controler {device}, car le serveur Beatbot est inaccessible."
+    },
+    "invalid_work_mode": {
+      "message": "Le mode de travail « {option} » n’est pas disponible pour cet appareil."
     }
   }
 }

@@ -10,6 +10,25 @@ on:
   workflow_dispatch:
 
 jobs:
+  tests:
+    name: Tests and coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - uses: astral-sh/setup-uv@v6
+      - run: uv venv --python 3.14 .venv
+      - run: uv pip install --python .venv/bin/python -r requirements_test.txt
+      - run: >-
+          .venv/bin/python -m pytest -q
+          --cov=custom_components.beatbot
+          --cov-report=term-missing
+          --cov-report=json:coverage.json
+          --cov-fail-under=96
+      - run: .venv/bin/python scripts/check_module_coverage.py coverage.json
+
   hacs:
     name: HACS Action
     runs-on: ubuntu-latest

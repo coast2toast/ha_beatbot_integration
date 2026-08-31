@@ -183,11 +183,17 @@
     }
   },
   "exceptions": {
+    "control_authentication_error": {
+      "message": "Beatbot authentication expired while controlling {device}. Reauthenticate the integration and try again."
+    },
     "control_connection_error": {
       "message": "Failed to control {device} because the Beatbot server could not be reached."
     },
     "device_offline": {
       "message": "{device} is offline."
+    },
+    "invalid_work_mode": {
+      "message": "The work mode {option} is not available for this device."
     }
   }
 }

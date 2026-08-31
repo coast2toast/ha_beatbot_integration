@@ -14,6 +14,8 @@ from .coordinator import BeatbotCoordinator
 from .entity import BeatbotEntity
 from .iot.const import INTERFACE_CHILD_LOCK, INTERFACE_VOICE_DISTURB
 
+PARALLEL_UPDATES = 1
+
 
 @dataclass(frozen=True)
 class BeatbotSwitchDescription:

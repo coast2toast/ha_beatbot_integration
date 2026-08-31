@@ -40,3 +40,33 @@ rules:
   test-before-configure: done
   test-before-setup: done
   unique-config-entry: done
+
+  # Silver
+  action-exceptions:
+    status: done
+    comment: Entity commands raise translated Home Assistant exceptions for invalid input, offline devices, authentication failures, and connection failures.
+  config-entry-unloading: done
+  docs-configuration-parameters:
+    status: done
+    comment: README.md documents OAuth-derived account and region configuration and the reauthentication path.
+  docs-installation-parameters:
+    status: done
+    comment: README.md states that there are no manual installation parameters or YAML settings.
+  entity-unavailable:
+    status: done
+    comment: Coordinator health, per-device runtime-state freshness, and device connectivity control availability, with tests for partial responses, state-service outages, offline devices, failed updates, and removed devices.
+  integration-owner:
+    status: done
+    comment: The manifest identifies @coast2toast as code owner and maintainer.
+  log-when-unavailable:
+    status: done
+    comment: Coordinator failures use UpdateFailed; partial state-service outages are logged once and recovery is logged once.
+  parallel-updates:
+    status: done
+    comment: Read-only platforms declare zero and control platforms serialize cloud commands with a limit of one.
+  reauthentication-flow:
+    status: done
+    comment: OAuth reauthentication is implemented and tested with same-account and regional resource validation.
+  test-coverage:
+    status: done
+    comment: Every non-empty integration module exceeds 95 percent statement coverage; CI also enforces a 96 percent aggregate floor.

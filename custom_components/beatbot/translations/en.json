@@ -14,7 +14,7 @@
             "oauth_unauthorized": "Authorization refused because authentication failed.",
             "reauth_successful": "Reauthentication was successful.",
             "unknown_region": "The Beatbot account did not report a supported region. Make sure the account is provisioned for a supported region (cn, na, eu) and try again.",
-            "user_rejected_authorize": "You rejected the authorization: {error}.",
+            "user_rejected_authorize": "You rejected the authorization: {error}",
             "wrong_account": "The authorized Beatbot account does not match the account being reauthenticated."
         },
         "create_entry": {
@@ -183,11 +183,17 @@
         }
     },
     "exceptions": {
+        "control_authentication_error": {
+          "message": "Beatbot authentication expired while controlling {device}. Reauthenticate the integration and try again."
+        },
         "control_connection_error": {
             "message": "Failed to control {device} because the Beatbot server could not be reached."
         },
         "device_offline": {
             "message": "{device} is offline."
+        },
+        "invalid_work_mode": {
+            "message": "The work mode {option} is not available for this device."
         }
     }
 }

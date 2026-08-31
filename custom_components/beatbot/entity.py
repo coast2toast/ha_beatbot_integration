@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
 
-from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -39,14 +39,18 @@ class BeatbotEntity(CoordinatorEntity[BeatbotCoordinator]):
 
     @property
     def available(self) -> bool:
-        """Return whether coordinator data still contains this device."""
-        return super().available and self._device_id in self.coordinator.data
+        """Return whether current runtime data exists for this device."""
+        return (
+            super().available
+            and self._device_id in self.coordinator.runtime_data_available
+            and self._device_id in self.coordinator.data
+        )
 
     async def _async_send_command(self, command: Callable[[], Awaitable[None]]) -> None:
         """Run a control API call with HA-idiomatic error translation.
 
-        - Auth failure escalates to ConfigEntryAuthFailed, consistent with the
-          coordinator's poll path, instead of exposing a library exception.
+        - Auth failure starts reauthentication and surfaces as a translated
+          HomeAssistantError instead of exposing a library exception.
         - Connection/transport failure surfaces as HomeAssistantError so the
           user sees a readable message instead of an opaque stack.
 
@@ -67,7 +71,15 @@ class BeatbotEntity(CoordinatorEntity[BeatbotCoordinator]):
         try:
             await command()
         except BeatbotAuthError as err:
-            raise ConfigEntryAuthFailed from err
+            if (entry := getattr(self.coordinator, "_config_entry", None)) is not None:
+                entry.async_start_reauth_if_available(self.coordinator.hass)
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="control_authentication_error",
+                translation_placeholders={
+                    "device": self.data.name or self._device_id,
+                },
+            ) from err
         except BeatbotConnectionError as err:
             raise HomeAssistantError(
                 translation_domain=DOMAIN,

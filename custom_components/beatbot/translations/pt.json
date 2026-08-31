@@ -171,8 +171,14 @@
     "device_offline": {
       "message": "{device} esta offline."
     },
+    "control_authentication_error": {
+      "message": "A autenticação do Beatbot expirou ao controlar {device}. Autentique novamente a integração e tente outra vez."
+    },
     "control_connection_error": {
       "message": "Nao foi possivel controlar {device} porque o servidor Beatbot nao pode ser acessado."
+    },
+    "invalid_work_mode": {
+      "message": "O modo de trabalho \"{option}\" não está disponível para este dispositivo."
     }
   }
 }

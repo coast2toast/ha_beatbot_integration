@@ -7,8 +7,8 @@ import json
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock
 
-from aiohttp import ClientError
 import pytest
+from aiohttp import ClientError
 from beatbot_cloud import BeatbotAuthenticationError, BeatbotConnectionError
 from homeassistant.config_entries import SOURCE_REAUTH, SOURCE_USER
 from homeassistant.core import HomeAssistant
@@ -185,9 +185,7 @@ async def _start_reauth_flow(hass: HomeAssistant, entry: MockConfigEntry) -> dic
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "reauth_confirm"
 
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {}
-    )
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
     if result["type"] is FlowResultType.FORM:
         assert result["step_id"] == "pick_implementation"
         result = await hass.config_entries.flow.async_configure(
@@ -281,9 +279,7 @@ async def test_reauth_preserves_credentials_when_validation_fails(
         },
     )
     entry.add_to_hass(hass)
-    _register_mock_impl(
-        hass, _make_token("account-1", nonce="new", region="eu")
-    )
+    _register_mock_impl(hass, _make_token("account-1", nonce="new", region="eu"))
     mock_resource_api.side_effect = error
 
     result = await _start_reauth_flow(hass, entry)

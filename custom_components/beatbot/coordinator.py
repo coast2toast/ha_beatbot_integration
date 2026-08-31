@@ -1,15 +1,15 @@
 """Data coordinator for the Beatbot integration."""
 
 import asyncio
-from datetime import timedelta
 import logging
+from datetime import timedelta
 
 from beatbot_cloud import BeatbotClient, BeatbotDeviceData
-
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryAuthFailed
-from homeassistant.helpers import device_registry as dr, entity_registry as er
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import BeatbotAuthError, BeatbotConnectionError
@@ -49,6 +49,8 @@ class BeatbotCoordinator(DataUpdateCoordinator[dict[str, BeatbotDeviceData]]):
         self._entry_id = config_entry.entry_id if config_entry is not None else None
         self._missing_device_counts: dict[str, int] = {}
         self._reload_scheduled = False
+        self._state_service_unavailable = False
+        self.runtime_data_available: set[str] = set()
         # One delayed post-control reconciliation task per device. A later
         # command replaces the pending task for that device (debounce), while
         # commands for different devices remain independent.
@@ -58,8 +60,10 @@ class BeatbotCoordinator(DataUpdateCoordinator[dict[str, BeatbotDeviceData]]):
         try:
             devices = await self.api.get_devices()
         except BeatbotAuthError as err:
+            self.runtime_data_available.clear()
             raise ConfigEntryAuthFailed from err
         except BeatbotConnectionError as err:
+            self.runtime_data_available.clear()
             raise UpdateFailed(f"Connection error: {err}") from err
 
         # Two-layer gating: category first (coarse — "do we support this
@@ -99,13 +103,20 @@ class BeatbotCoordinator(DataUpdateCoordinator[dict[str, BeatbotDeviceData]]):
         try:
             states = await self.api.get_device_states()
         except BeatbotAuthError as err:
+            self.runtime_data_available.clear()
             raise ConfigEntryAuthFailed from err
         except BeatbotConnectionError as err:
-            _LOGGER.warning(
-                "Device state fetch failed, using discovery-only data: %s", err
-            )
+            self.runtime_data_available.clear()
+            if not self._state_service_unavailable:
+                _LOGGER.info("Beatbot state service is unavailable")
+                self._state_service_unavailable = True
+            _LOGGER.debug("Device state fetch failed: %s", err)
             states = {}
         else:
+            self.runtime_data_available = set(states) & set(result)
+            if self._state_service_unavailable:
+                _LOGGER.info("Beatbot state service is available again")
+                self._state_service_unavailable = False
             _LOGGER.info(
                 "Beatbot state pull completed (source=batch, deviceCount=%s)",
                 len(states),
@@ -235,6 +246,7 @@ class BeatbotCoordinator(DataUpdateCoordinator[dict[str, BeatbotDeviceData]]):
         device = self.data.get(device_id)
         if device is None:
             return
+        self.runtime_data_available.add(device_id)
         state_values = state.get("states")
         is_online = state.get("is_online")
         _LOGGER.info(
@@ -274,6 +286,7 @@ class BeatbotCoordinator(DataUpdateCoordinator[dict[str, BeatbotDeviceData]]):
             is_online,
             source="websocket",
         )
+        self.runtime_data_available.add(device_id)
         self.last_update_success = True
         # DataUpdateCoordinator.async_set_updated_data resets the next poll
         # deadline. Notify listeners directly so steady event traffic cannot

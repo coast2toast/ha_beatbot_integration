@@ -5,13 +5,14 @@ from __future__ import annotations
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
 from homeassistant.components.vacuum import (
     ATTR_BATTERY_LEVEL,
     VacuumActivity,
     VacuumEntityFeature,
 )
-import pytest
 
+from custom_components.beatbot import vacuum as vacuum_module
 from custom_components.beatbot.iot.category import (
     VACUUM_FEATURES_BY_CATEGORY,
 )
@@ -47,7 +48,11 @@ def _make_coordinator(
         work_mode_options=work_mode_options or {},
         capabilities=capabilities or {},
     )
-    return SimpleNamespace(data={DEVICE_ID: device}, last_update_success=True)
+    return SimpleNamespace(
+        data={DEVICE_ID: device},
+        last_update_success=True,
+        runtime_data_available={DEVICE_ID},
+    )
 
 
 @pytest.mark.parametrize(
@@ -236,3 +241,41 @@ async def test_vacuum_action_triggers_single_device_refresh() -> None:
 
     coordinator.api.send_action.assert_awaited_once_with(DEVICE_ID, INTERFACE_START)
     coordinator.async_schedule_device_state_refresh.assert_called_once_with(DEVICE_ID)
+
+
+@pytest.mark.parametrize(
+    ("method_name", "interface_info"),
+    [
+        ("async_pause", INTERFACE_PAUSE),
+        ("async_return_to_base", INTERFACE_RETURN_TO_BASE),
+    ],
+)
+async def test_other_vacuum_actions_refresh_target_device(
+    method_name: str, interface_info: str
+) -> None:
+    """Pause and return commands use their advertised action and reconcile state."""
+    coordinator = _make_coordinator("pool_clean_bot")
+    coordinator.api = SimpleNamespace(send_action=AsyncMock())
+    coordinator.async_schedule_device_state_refresh = MagicMock()
+    vacuum = BeatbotPoolVacuum(coordinator, DEVICE_ID)
+
+    await getattr(vacuum, method_name)()
+
+    coordinator.api.send_action.assert_awaited_once_with(DEVICE_ID, interface_info)
+    coordinator.async_schedule_device_state_refresh.assert_called_once_with(DEVICE_ID)
+
+
+async def test_setup_creates_one_vacuum_per_discovered_device() -> None:
+    """Expose every reconciled supported device on the vacuum platform."""
+    coordinator = _make_coordinator("pool_clean_bot")
+    second = _make_coordinator("clean_base_station").data[DEVICE_ID]
+    second.device_id = "station-1"
+    coordinator.data["station-1"] = second
+    entry = SimpleNamespace(runtime_data=SimpleNamespace(coordinator=coordinator))
+    added: list = []
+
+    await vacuum_module.async_setup_entry(
+        None, entry, lambda entities: added.extend(entities)
+    )
+
+    assert [entity.unique_id for entity in added] == [DEVICE_ID, "station-1"]

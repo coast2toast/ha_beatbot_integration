@@ -171,8 +171,14 @@
     "device_offline": {
       "message": "{device} 当前离线。"
     },
+    "control_authentication_error": {
+      "message": "控制 {device} 时 Beatbot 身份验证已过期。请重新验证集成后再试。"
+    },
     "control_connection_error": {
       "message": "无法控制 {device}，因为无法连接 Beatbot 服务器。"
+    },
+    "invalid_work_mode": {
+      "message": "此设备不支持工作模式“{option}”。"
     }
   }
 }

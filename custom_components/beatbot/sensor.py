@@ -16,6 +16,8 @@ from .iot.category import (
     STATUS_DISPLAY_MAP_BY_CATEGORY,
 )
 
+PARALLEL_UPDATES = 0
+
 
 def _remove_obsolete_firmware_entity(
     hass: HomeAssistant, entry: BeatbotConfigEntry

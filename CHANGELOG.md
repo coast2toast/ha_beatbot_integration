@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+- Reach the self-assessed Silver Home Assistant Integration Quality Scale tier.
+- Add explicit entity-platform parallel-update limits.
+- Coalesce partial cloud state-service outage and recovery logging while
+  tracking freshness per device and marking stale runtime entities unavailable.
+- Raise translated validation errors for unsupported work-mode selections.
+- Surface translated control-authentication failures and start reauthentication.
+- Expand behavior tests so every non-empty integration module exceeds 95
+  percent statement coverage, with 99.74 percent aggregate coverage, and
+  enforce both thresholds in GitHub Actions.
+- Document OAuth-derived installation and configuration parameters.
+
 ## 2026.08.31
 
 - Add OAuth reauthentication for expired or revoked Beatbot credentials.

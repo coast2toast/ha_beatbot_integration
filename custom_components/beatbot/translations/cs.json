@@ -171,8 +171,14 @@
     "device_offline": {
       "message": "{device} je offline."
     },
+    "control_authentication_error": {
+      "message": "Při ovládání zařízení {device} vypršelo ověření Beatbot. Znovu ověřte integraci a akci opakujte."
+    },
     "control_connection_error": {
       "message": "Nelze ovladat {device}, protoze server Beatbot neni dostupny."
+    },
+    "invalid_work_mode": {
+      "message": "Pracovní režim „{option}“ není pro toto zařízení dostupný."
     }
   }
 }

@@ -1,7 +1,7 @@
 # Beatbot Home Assistant Integration
 
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
-[![Quality Scale](https://img.shields.io/badge/Quality%20Scale-Bronze-CD7F32.svg)](https://developers.home-assistant.io/docs/core/integration-quality-scale/)
+[![Quality Scale](https://img.shields.io/badge/Quality%20Scale-Silver-C0C0C0.svg)](https://developers.home-assistant.io/docs/core/integration-quality-scale/)
 
 A custom Home Assistant integration for supported Beatbot cloud-connected pool cleaners and cleaning base stations.
 
@@ -34,9 +34,10 @@ with the following notable changes relative to upstream commit `b9bfe125`
   updating the config entry, preserving existing credentials if validation fails.
 - Maps clean-base-station work status `0` to `cleaning` instead of exposing an
   unknown status.
-- Adds reauthentication, account-mismatch, status-mapping, and translation
-  contract tests; the complete suite contains 125 passing tests.
-- Validates this custom release against Home Assistant 2026.2.3 and provides
+- Adds reauthentication, account-mismatch, availability, action-error,
+  status-mapping, and translation contract tests with per-module coverage gates.
+- Validates this custom integration against Home Assistant 2026.8.3 while
+  retaining compatibility coverage for Home Assistant 2026.2.3, and provides
   HACS-specific documentation, release notes, licensing, and attribution.
 
 Upstream may evolve independently. The related
@@ -45,7 +46,8 @@ remains the proposed path toward a built-in Beatbot integration.
 
 ## Requirements
 
-- Home Assistant 2026.2.3 or newer (the automated suite is validated against 2026.2.3)
+- Home Assistant 2026.2.3 or newer (GitHub Actions validates against 2026.8.3;
+  compatibility is also tested against 2026.2.3)
 - A supported Beatbot device associated with a Beatbot cloud account
 - Home Assistant must have internet access and a valid external callback URL for OAuth
 - A Beatbot account in a supported region: North America (`na`), Europe (`eu`), or mainland China (`cn`)
@@ -59,10 +61,11 @@ The integration depends on `beatbot-cloud==0.4.1`; Home Assistant installs this 
   automated HACS Action validation.
 - **Home Assistant validation** — hassfest runs with the HACS Action on pushes
   to `main`, pull requests, a daily schedule, and manual dispatch.
-- **Integration Quality Scale: Bronze (self-assessed)** — all Bronze rules in
+- **Integration Quality Scale: Silver (self-assessed)** — all Bronze and Silver rules in
   `custom_components/beatbot/quality_scale.yaml` are marked complete or exempt
-  with an explanation. This is a community assessment, not a Home Assistant
-  Core review or endorsement.
+  with an explanation. CI requires every non-empty integration module to exceed
+  95 percent statement coverage and enforces a 96 percent aggregate floor.
+  This is a community assessment, not a Home Assistant Core review or endorsement.
 - **Catalog status** — installable as a HACS custom repository; inclusion in
   the default HACS catalog requires a separate submission and acceptance.
 
@@ -93,6 +96,14 @@ Current release: **2026.08.31**. See [CHANGELOG.md](CHANGELOG.md) for release no
 
 The access token must contain an account identifier (`sub`) and a supported `region` claim. The account identifier prevents duplicate configuration entries. The integration does not silently fall back to another region.
 
+### Installation and configuration parameters
+
+There are no manual installation parameters or YAML settings. Beatbot OAuth
+supplies the account identity and service region; the integration validates
+both before creating the config entry. Expired or revoked credentials are
+replaced through Home Assistant's **Reauthenticate** flow. Changing to another
+Beatbot account requires a separate config entry.
+
 ## Removing the integration
 
 1. Go to **Settings > Devices & services**.
@@ -107,10 +118,11 @@ The repository includes unit tests for OAuth setup, API handling, coordinator re
 
 ```bash
 uv venv --python 3.14 .venv
-uv pip install --python .venv/bin/python \
-  "homeassistant==2026.8.3" \
-  "pytest-homeassistant-custom-component==0.13.361"
-.venv/bin/python -m pytest -q
+uv pip install --python .venv/bin/python -r requirements_test.txt
+.venv/bin/python -m pytest -q \
+  --cov=custom_components.beatbot \
+  --cov-report=term-missing \
+  --cov-fail-under=96
 ```
 
 Static validation without the Home Assistant test dependencies:

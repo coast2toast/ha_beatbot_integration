@@ -171,8 +171,14 @@
     "device_offline": {
       "message": "{device} esta sin conexion."
     },
+    "control_authentication_error": {
+      "message": "La autenticación de Beatbot caducó al controlar {device}. Vuelva a autenticar la integración e inténtelo de nuevo."
+    },
     "control_connection_error": {
       "message": "No se pudo controlar {device} porque no se pudo acceder al servidor Beatbot."
+    },
+    "invalid_work_mode": {
+      "message": "El modo de trabajo «{option}» no está disponible para este dispositivo."
     }
   }
 }

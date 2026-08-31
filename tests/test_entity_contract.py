@@ -5,10 +5,11 @@ from __future__ import annotations
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock
 
-from homeassistant.const import Platform
-from homeassistant.exceptions import HomeAssistantError
 import pytest
+from homeassistant.const import Platform
+from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
 
+from custom_components.beatbot.api import BeatbotAuthError, BeatbotConnectionError
 from custom_components.beatbot.binary_sensor import (
     BeatbotChargingSensor,
     BeatbotOnlineSensor,
@@ -29,13 +30,15 @@ from custom_components.beatbot.sensor import (
     BeatbotErrorSensor,
     BeatbotStatusSensor,
 )
-from custom_components.beatbot.switch import BeatbotSwitch, SWITCH_DESCRIPTIONS
+from custom_components.beatbot.switch import SWITCH_DESCRIPTIONS, BeatbotSwitch
 from custom_components.beatbot.vacuum import BeatbotPoolVacuum
 
 DEVICE_ID = "test-device-1"
 
 
-def _coordinator(*, is_online: bool = True) -> SimpleNamespace:
+def _coordinator(
+    *, is_online: bool = True, runtime_data_available: bool = True
+) -> SimpleNamespace:
     """Build a coordinator with every currently exposed entity capability."""
     device = BeatbotDeviceData(
         device_id=DEVICE_ID,
@@ -52,6 +55,7 @@ def _coordinator(*, is_online: bool = True) -> SimpleNamespace:
     return SimpleNamespace(
         data={DEVICE_ID: device},
         last_update_success=True,
+        runtime_data_available={DEVICE_ID} if runtime_data_available else set(),
         api=SimpleNamespace(
             send_action=AsyncMock(),
             set_work_mode=AsyncMock(),
@@ -155,6 +159,25 @@ def test_failed_coordinator_update_marks_all_entities_unavailable() -> None:
     assert all(not entity.available for entity in entities)
 
 
+def test_failed_runtime_state_fetch_marks_all_entities_unavailable() -> None:
+    """Do not expose stale runtime values as available after a state outage."""
+    entities = _entities(_coordinator(runtime_data_available=False))
+
+    assert all(not entity.available for entity in entities)
+
+
+def test_runtime_state_availability_is_scoped_to_one_device() -> None:
+    """A fresh event for one device must not revive another device's stale state."""
+    coordinator = _coordinator()
+    second = _coordinator().data[DEVICE_ID]
+    second.device_id = "test-device-2"
+    coordinator.data[second.device_id] = second
+    coordinator.runtime_data_available = {DEVICE_ID}
+
+    assert BeatbotStatusSensor(coordinator, DEVICE_ID).available
+    assert not BeatbotStatusSensor(coordinator, second.device_id).available
+
+
 async def test_offline_command_is_not_created() -> None:
     """Reject an offline action before constructing its API coroutine."""
     coordinator = _coordinator(is_online=False)
@@ -176,3 +199,48 @@ async def test_online_command_is_awaited_once() -> None:
 
     coordinator.api.send_action.assert_awaited_once_with(DEVICE_ID, INTERFACE_START)
     coordinator.async_schedule_device_state_refresh.assert_called_once_with(DEVICE_ID)
+
+
+async def test_command_errors_are_translated_for_home_assistant() -> None:
+    """Convert library auth and transport failures to Home Assistant errors."""
+    coordinator = _coordinator()
+    coordinator.hass = object()
+    coordinator._config_entry = SimpleNamespace(async_start_reauth_if_available=Mock())
+    entity = BeatbotStatusSensor(coordinator, DEVICE_ID)
+
+    with pytest.raises(HomeAssistantError) as auth_exc_info:
+        await entity._async_send_command(AsyncMock(side_effect=BeatbotAuthError))
+
+    assert not isinstance(auth_exc_info.value, ConfigEntryAuthFailed)
+    assert auth_exc_info.value.translation_domain == "beatbot"
+    assert auth_exc_info.value.translation_key == "control_authentication_error"
+    coordinator._config_entry.async_start_reauth_if_available.assert_called_once_with(
+        coordinator.hass
+    )
+
+    with pytest.raises(HomeAssistantError) as exc_info:
+        await entity._async_send_command(
+            AsyncMock(side_effect=BeatbotConnectionError("network"))
+        )
+
+    assert exc_info.value.translation_domain == "beatbot"
+    assert exc_info.value.translation_key == "control_connection_error"
+
+
+def test_device_info_exposes_registry_metadata() -> None:
+    """Expose stable identifiers and all non-empty firmware channels."""
+    coordinator = _coordinator()
+    device = coordinator.data[DEVICE_ID]
+    device.name = "AquaSense"
+    device.versions = [
+        SimpleNamespace(channel=1, version="1.2.3"),
+        SimpleNamespace(channel=2, version=""),
+    ]
+
+    info = BeatbotStatusSensor(coordinator, DEVICE_ID).device_info
+
+    assert info["identifiers"] == {("beatbot", DEVICE_ID)}
+    assert info["name"] == "AquaSense"
+    assert info["manufacturer"] == "Beatbot"
+    assert info["model"] == "sblekiy3t188s9ql"
+    assert info["sw_version"] == "ch1:1.2.3"

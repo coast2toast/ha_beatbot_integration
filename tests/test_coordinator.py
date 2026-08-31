@@ -8,7 +8,6 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock
 
 import pytest
-
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import UpdateFailed
@@ -84,6 +83,55 @@ async def test_coordinator_connection_failure_is_retryable(
         await coordinator._async_update_data()
 
 
+async def test_discovery_failure_clears_all_runtime_freshness_before_event(
+    hass: HomeAssistant,
+) -> None:
+    """A later event must revive only its own device after discovery fails."""
+    first = _device("dev-1", SUPPORTED_PRODUCT)
+    second = _device("dev-2", SUPPORTED_PRODUCT)
+    api = SimpleNamespace(
+        get_devices=AsyncMock(side_effect=BeatbotConnectionError("offline")),
+        get_device_states=AsyncMock(return_value={}),
+    )
+    coordinator = BeatbotCoordinator(hass, api)
+    coordinator.async_set_updated_data({"dev-1": first, "dev-2": second})
+    coordinator.runtime_data_available = {"dev-1", "dev-2"}
+
+    with pytest.raises(UpdateFailed):
+        await coordinator._async_update_data()
+
+    coordinator.async_apply_device_event("dev-1", {"vacuum.battery": 42})
+
+    assert coordinator.runtime_data_available == {"dev-1"}
+
+
+async def test_state_service_logs_one_outage_and_one_recovery(
+    hass: HomeAssistant, caplog
+) -> None:
+    """Repeated state failures must not spam logs and recovery is announced once."""
+    device = _device("dev-supported", SUPPORTED_PRODUCT)
+    api = SimpleNamespace(
+        get_devices=AsyncMock(return_value=[device]),
+        get_device_states=AsyncMock(
+            side_effect=[
+                BeatbotConnectionError,
+                BeatbotConnectionError,
+                {"dev-supported": {"states": {}, "is_online": True}},
+            ]
+        ),
+    )
+    coordinator = BeatbotCoordinator(hass, api)
+
+    with caplog.at_level(logging.INFO, logger="custom_components.beatbot.coordinator"):
+        await coordinator._async_update_data()
+        await coordinator._async_update_data()
+        await coordinator._async_update_data()
+
+    assert caplog.messages.count("Beatbot state service is unavailable") == 1
+    assert caplog.messages.count("Beatbot state service is available again") == 1
+    assert coordinator.runtime_data_available == {"dev-supported"}
+
+
 async def test_coordinator_empty_allow_list_drops_everything(
     hass: HomeAssistant, monkeypatch
 ) -> None:
@@ -127,6 +175,7 @@ async def test_device_event_overlays_state_without_resetting_poll(
     assert "interfaceInfo=vacuum.battery, old=80, new=42" in caplog.text
     assert "interfaceInfo=online, old=True, new=False" in caplog.text
     assert coordinator.last_update_success
+    assert coordinator.runtime_data_available == {"dev-1"}
     assert coordinator._unsub_refresh is next_poll
     listener.assert_called_once()
     remove_listener()
@@ -173,6 +222,7 @@ async def test_post_control_refresh_fetches_only_target_device(
     assert "states={'vacuum.state': 5}" in caplog.text
     assert "interfaceInfo=vacuum.state, old=0, new=5" in caplog.text
     assert coordinator._refresh_tasks == {}
+    assert coordinator.runtime_data_available == {"dev-1"}
 
 
 async def test_post_control_refresh_debounces_per_device(
@@ -359,6 +409,7 @@ async def test_poll_preserves_state_when_batch_request_fails(
 
     assert data["dev-1"].battery_level == 42
     assert data["dev-1"].work_status == 5
+    assert coordinator.runtime_data_available == set()
 
 
 async def test_poll_overlays_partial_state_on_previous_values(
@@ -382,6 +433,25 @@ async def test_poll_overlays_partial_state_on_previous_values(
 
     assert data["dev-1"].work_status == 5
     assert data["dev-1"].battery_level == 75
+
+
+async def test_batch_runtime_availability_is_scoped_per_device(
+    hass: HomeAssistant,
+) -> None:
+    """A partial successful batch refreshes only devices present in its response."""
+    first = _device("dev-1", SUPPORTED_PRODUCT)
+    second = _device("dev-2", SUPPORTED_PRODUCT)
+    api = SimpleNamespace(
+        get_devices=AsyncMock(return_value=[first, second]),
+        get_device_states=AsyncMock(
+            return_value={"dev-1": {"states": {}, "is_online": True}}
+        ),
+    )
+    coordinator = BeatbotCoordinator(hass, api)
+
+    await coordinator._async_update_data()
+
+    assert coordinator.runtime_data_available == {"dev-1"}
 
 
 async def test_poll_removes_registry_only_stale_device_after_three_misses(
@@ -456,3 +526,143 @@ def test_entry_reload_is_scheduled_once(hass: HomeAssistant) -> None:
     coordinator._schedule_entry_reload()
 
     hass.config_entries.async_schedule_reload.assert_called_once_with("entry")
+
+
+async def test_unknown_product_category_is_logged_and_skipped(
+    hass: HomeAssistant, caplog
+) -> None:
+    """Explain why devices from unsupported product lines do not appear."""
+    device = _device("dev-unknown", SUPPORTED_PRODUCT)
+    device.product_category = "lawn_mower"
+    api = SimpleNamespace(
+        get_devices=AsyncMock(return_value=[device]),
+        get_device_states=AsyncMock(return_value={}),
+    )
+    coordinator = BeatbotCoordinator(hass, api)
+
+    with caplog.at_level(logging.INFO, logger="custom_components.beatbot.coordinator"):
+        data = await coordinator._async_update_data()
+
+    assert data == {}
+    assert "product category 'lawn_mower' is not supported" in caplog.text
+
+
+async def test_state_auth_failure_requests_reauthentication(
+    hass: HomeAssistant,
+) -> None:
+    """Escalate auth failure and clear freshness before any later event."""
+    first = _device("dev-1", SUPPORTED_PRODUCT)
+    second = _device("dev-2", SUPPORTED_PRODUCT)
+    api = SimpleNamespace(
+        get_devices=AsyncMock(return_value=[first, second]),
+        get_device_states=AsyncMock(side_effect=BeatbotAuthError),
+    )
+    coordinator = BeatbotCoordinator(hass, api)
+    coordinator.async_set_updated_data({"dev-1": first, "dev-2": second})
+    coordinator.runtime_data_available = {"dev-1", "dev-2"}
+
+    with pytest.raises(ConfigEntryAuthFailed):
+        await coordinator._async_update_data()
+
+    coordinator.async_apply_device_event("dev-1", {"vacuum.battery": 42})
+
+    assert coordinator.runtime_data_available == {"dev-1"}
+
+
+def test_registered_device_ids_filters_registry_identifiers(
+    hass: HomeAssistant, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Return only Beatbot identifiers tied to this config entry."""
+    from custom_components.beatbot import coordinator as coord_mod
+
+    coordinator = BeatbotCoordinator(hass, SimpleNamespace())
+    assert coordinator._registered_device_ids() == set()
+
+    registry = object()
+    monkeypatch.setattr(coord_mod.dr, "async_get", Mock(return_value=registry))
+    monkeypatch.setattr(
+        coord_mod.dr,
+        "async_entries_for_config_entry",
+        Mock(
+            return_value=[
+                SimpleNamespace(identifiers={(coord_mod.DOMAIN, "dev-1")}),
+                SimpleNamespace(identifiers={("other", "dev-2")}),
+            ]
+        ),
+    )
+    coordinator = BeatbotCoordinator(hass, SimpleNamespace(), _entry())
+
+    assert coordinator._registered_device_ids() == {"dev-1"}
+
+
+def test_registry_and_reload_guards_are_noops(
+    hass: HomeAssistant, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Do not touch registries or reload without a usable entry/device."""
+    from custom_components.beatbot import coordinator as coord_mod
+
+    coordinator = BeatbotCoordinator(hass, SimpleNamespace())
+    coordinator._remove_device_from_registries("dev-1")
+    coordinator._schedule_entry_reload()
+
+    device_registry = SimpleNamespace(async_get_device=Mock(return_value=None))
+    monkeypatch.setattr(coord_mod.dr, "async_get", Mock(return_value=device_registry))
+    coordinator = BeatbotCoordinator(hass, SimpleNamespace(), _entry())
+    coordinator._remove_device_from_registries("dev-1")
+
+    device_registry.async_get_device.assert_called_once()
+
+
+async def test_single_device_refresh_connection_and_missing_device_paths(
+    hass: HomeAssistant, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Keep refresh failures best-effort and ignore removed target devices."""
+    from custom_components.beatbot import coordinator as coord_mod
+
+    monkeypatch.setattr(coord_mod, "POST_CONTROL_REFRESH_DELAY", 0)
+    api = SimpleNamespace(
+        get_device_state=AsyncMock(
+            side_effect=[
+                BeatbotConnectionError("offline"),
+                {"states": {}, "is_online": True},
+            ]
+        )
+    )
+    coordinator = BeatbotCoordinator(hass, api)
+    coordinator.async_set_updated_data({})
+
+    await coordinator.async_refresh_device_state("dev-1")
+    await coordinator.async_refresh_device_state("dev-1")
+
+    assert api.get_device_state.await_count == 2
+    assert not coordinator.runtime_data_available
+
+
+async def test_scheduled_refresh_auth_failure_starts_reauthentication(
+    hass: HomeAssistant, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Convert delayed refresh auth failures into a config-entry reauth flow."""
+    from custom_components.beatbot import coordinator as coord_mod
+
+    monkeypatch.setattr(coord_mod, "POST_CONTROL_REFRESH_DELAY", 0)
+    entry = _entry()
+    entry.async_start_reauth_if_available = Mock()
+    api = SimpleNamespace(get_device_state=AsyncMock(side_effect=BeatbotAuthError))
+    coordinator = BeatbotCoordinator(hass, api, entry)
+    coordinator.async_set_updated_data({"dev-1": _device("dev-1", SUPPORTED_PRODUCT)})
+
+    coordinator.async_schedule_device_state_refresh("dev-1")
+    await coordinator._refresh_tasks["dev-1"]
+
+    entry.async_start_reauth_if_available.assert_called_once_with(hass)
+
+
+def test_unknown_state_field_is_ignored() -> None:
+    """Ignore cloud fields that are not mapped to the integration model."""
+    device = _device("dev-1", SUPPORTED_PRODUCT)
+
+    BeatbotCoordinator._apply_state_with_logging(
+        "dev-1", device, {"unknown.field": 123}, None, source="batch"
+    )
+
+    assert device.battery_level == 80

@@ -2,17 +2,17 @@
 
 from __future__ import annotations
 
+import asyncio
 from types import SimpleNamespace
 from typing import Protocol
 from unittest.mock import AsyncMock, Mock
 
+import pytest
 from beatbot_cloud import (
     BeatbotAuthenticationError,
     BeatbotConnectionError,
     BeatbotEvent,
 )
-import pytest
-
 from homeassistant.core import HomeAssistant
 
 from custom_components.beatbot.iot import event_stream as event_stream_module
@@ -316,3 +316,52 @@ def test_removed_device_is_detached_from_only_this_entry(
     device_registry.async_update_device.assert_called_once_with(
         "registry-device", remove_config_entry_id="entry"
     )
+
+
+async def test_stop_cancels_running_supervisor_task(
+    event_client: tuple[BeatbotEventClient, Mock],
+) -> None:
+    """Stopping the bridge waits for cancellation of its running supervisor."""
+    client, _ = event_client
+    client._client.async_close = AsyncMock()
+    blocker = asyncio.Event()
+    task = asyncio.create_task(blocker.wait())
+    client._task = task
+
+    await client.async_stop()
+
+    assert task.cancelled()
+    assert client._task is None
+
+
+def test_topology_reload_is_coalesced(
+    hass: HomeAssistant,
+    event_client: tuple[BeatbotEventClient, Mock],
+    event_factory: EventFactory,
+) -> None:
+    """A burst of topology events schedules only one config-entry reload."""
+    client, _ = event_client
+    hass.config_entries.async_schedule_reload = Mock()
+
+    client._handle_event(event_factory("event-5", "device_added", None))
+    client._handle_event(event_factory("event-6", "device_added", None))
+
+    hass.config_entries.async_schedule_reload.assert_called_once_with("entry")
+
+
+def test_removing_unknown_registry_device_is_noop(
+    event_client: tuple[BeatbotEventClient, Mock],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Ignore removal events for devices already absent from the registry."""
+    client, _ = event_client
+    device_registry = SimpleNamespace(
+        async_get_device=Mock(return_value=None), async_update_device=Mock()
+    )
+    monkeypatch.setattr(
+        event_stream_module.dr, "async_get", Mock(return_value=device_registry)
+    )
+
+    client._remove_device_from_registries("missing")
+
+    device_registry.async_update_device.assert_not_called()

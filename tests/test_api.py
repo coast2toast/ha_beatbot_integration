@@ -5,6 +5,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
+import pytest
 from aiohttp import ClientError, ClientResponseError
 from beatbot_cloud import (
     BeatbotAuthenticationError,
@@ -12,8 +13,6 @@ from beatbot_cloud import (
     BeatbotConnectionError,
 )
 from beatbot_cloud.const import REGION_API_BASE_URL
-import pytest
-
 from homeassistant.exceptions import ConfigEntryAuthFailed
 
 from custom_components.beatbot.api import async_get_access_token

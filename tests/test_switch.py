@@ -7,12 +7,13 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from custom_components.beatbot import switch as switch_module
 from custom_components.beatbot.iot.const import (
     INTERFACE_CHILD_LOCK,
     INTERFACE_VOICE_DISTURB,
 )
-from custom_components.beatbot.models import BeatbotDeviceData
-from custom_components.beatbot.switch import BeatbotSwitch, SWITCH_DESCRIPTIONS
+from custom_components.beatbot.models import BeatbotCapability, BeatbotDeviceData
+from custom_components.beatbot.switch import SWITCH_DESCRIPTIONS, BeatbotSwitch
 
 DEVICE_ID = "base-station-1"
 
@@ -34,6 +35,7 @@ def _make_coordinator() -> SimpleNamespace:
     return SimpleNamespace(
         data={DEVICE_ID: device},
         last_update_success=True,
+        runtime_data_available={DEVICE_ID},
         api=SimpleNamespace(set_switch=AsyncMock()),
         async_schedule_device_state_refresh=MagicMock(),
     )
@@ -80,3 +82,31 @@ async def test_switch_sends_on_off_label(
         DEVICE_ID, interface_info, expected_label
     )
     coordinator.async_schedule_device_state_refresh.assert_called_once_with(DEVICE_ID)
+
+
+@pytest.mark.parametrize("value", [True, 1, "on"])
+def test_switch_accepts_backend_enabled_representations(value: object) -> None:
+    """Treat each enabled representation returned by the cloud as on."""
+    coordinator = _make_coordinator()
+    coordinator.data[DEVICE_ID].child_lock = value
+
+    assert BeatbotSwitch(coordinator, DEVICE_ID, SWITCH_DESCRIPTIONS[0]).is_on
+
+
+async def test_setup_only_creates_controllable_advertised_switches() -> None:
+    """Do not expose missing or read-only switch capabilities as controls."""
+    coordinator = _make_coordinator()
+    coordinator.data[DEVICE_ID].capabilities = {
+        INTERFACE_CHILD_LOCK: BeatbotCapability(
+            interface_info=INTERFACE_CHILD_LOCK, non_controllable=False
+        ),
+        INTERFACE_VOICE_DISTURB: BeatbotCapability(
+            interface_info=INTERFACE_VOICE_DISTURB, non_controllable=True
+        ),
+    }
+    entry = SimpleNamespace(runtime_data=SimpleNamespace(coordinator=coordinator))
+    added: list = []
+
+    await switch_module.async_setup_entry(None, entry, added.extend)
+
+    assert [entity.unique_id for entity in added] == [f"{DEVICE_ID}_child_lock"]

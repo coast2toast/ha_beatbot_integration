@@ -3,6 +3,8 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 .coverage
+coverage.json
+.fuse_hidden*
 htmlcov/
 .venv/
 venv/

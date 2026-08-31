@@ -6,6 +6,7 @@ import logging
 
 from homeassistant.components.select import SelectEntity
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import BeatbotConfigEntry
@@ -13,6 +14,8 @@ from .coordinator import BeatbotCoordinator
 from .entity import BeatbotEntity
 
 _LOGGER = logging.getLogger(__name__)
+
+PARALLEL_UPDATES = 1
 
 
 class BeatbotWorkModeSelect(BeatbotEntity, SelectEntity):
@@ -42,10 +45,11 @@ class BeatbotWorkModeSelect(BeatbotEntity, SelectEntity):
     async def async_select_option(self, option: str) -> None:
         """Set the device work mode."""
         if option not in self._option_to_value:
-            _LOGGER.warning(
-                "Unknown work mode %r for %s; ignoring", option, self._device_id
+            raise ServiceValidationError(
+                translation_domain="beatbot",
+                translation_key="invalid_work_mode",
+                translation_placeholders={"option": option},
             )
-            return
         target_value = self._option_to_value[option]
         await self._async_send_command(
             lambda: self.coordinator.api.set_work_mode(self._device_id, option)

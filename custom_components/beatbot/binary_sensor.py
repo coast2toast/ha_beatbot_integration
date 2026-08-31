@@ -18,6 +18,8 @@ from .iot.category import (
     ERROR_BITS_BY_CATEGORY,
 )
 
+PARALLEL_UPDATES = 0
+
 
 class BeatbotOnlineSensor(BeatbotEntity, BinarySensorEntity):
     """Represent the device cloud connectivity state."""

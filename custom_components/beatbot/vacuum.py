@@ -23,6 +23,8 @@ from .iot.category import (
 )
 from .iot.const import INTERFACE_PAUSE, INTERFACE_RETURN_TO_BASE, INTERFACE_START
 
+PARALLEL_UPDATES = 1
+
 VACUUM_TRANSLATION_KEYS = {
     ProductCategory.POOL_CLEAN_BOT: "beatbot_pool_vacuum",
     ProductCategory.CLEAN_BASE_STATION: "beatbot_clean_base_station_vacuum",
