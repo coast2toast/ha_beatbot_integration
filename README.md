@@ -213,19 +213,25 @@ This community-maintained version is derived from the
 with the following notable changes relative to upstream commit `b9bfe125`
 (`v0.0.2`):
 
-- Adds Home Assistant OAuth reauthentication for expired or revoked credentials
-  without requiring users to delete and recreate the integration.
-- Verifies the JWT account identifier (`sub`) during reauthentication and rejects
-  authorization with a different Beatbot account.
-- Validates replacement credentials against the regional device API before
-  updating the config entry, preserving existing credentials if validation fails.
-- Maps clean-base-station work status `0` to `cleaning` instead of exposing an
-  unknown status.
-- Adds reauthentication, account-mismatch, availability, action-error,
-  status-mapping, and translation contract tests with per-module coverage gates.
-- Validates this custom integration against Home Assistant 2026.8.3 while
-  retaining compatibility coverage for Home Assistant 2026.2.3, and provides
-  HACS-specific documentation, release notes, licensing, and attribution.
+- Adds OAuth reauthentication without deleting the config entry, verifies the
+  same account is used, and validates replacement credentials against the
+  regional device API before saving them.
+- Tracks runtime-state freshness per device, so partial cloud responses and
+  partial recovery cannot make unrelated stale entities appear available.
+- Extends translated action failures to authentication and invalid-mode cases;
+  control-time authentication failures also start reauthentication.
+- Adds privacy-redacted config-entry diagnostics covering cloud capabilities,
+  firmware, coordinator health, event-stream status, and runtime state.
+- Adds semantic and state-specific entity icons, cloud model metadata with a
+  product-ID fallback, and quieter default entity registration for secondary
+  work-status, connectivity, and charging diagnostics.
+- Corrects clean-base-station status mapping and documents supported devices,
+  update behavior, automations, use cases, limitations, and troubleshooting.
+- Completes a self-assessed Gold quality checklist, with 165 tests, 99.74 percent
+  aggregate coverage, and every non-empty integration module above 95 percent.
+- Validates Home Assistant 2026.8.3 in CI and retains compatibility coverage for
+  Home Assistant 2026.2.3, alongside HACS and hassfest, with immutable action
+  pins and versioned GitHub releases.
 
 Upstream may evolve independently. The related
 [Home Assistant Core contribution](https://github.com/home-assistant/core/pull/177108)

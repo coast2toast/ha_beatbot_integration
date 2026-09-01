@@ -5,9 +5,14 @@ This project contains code derived from the Beatbot integration contribution to
 Home Assistant Core:
 https://github.com/home-assistant/core/pull/177108
 
-Home Assistant Core is licensed under the Apache License, Version 2.0.
-Modifications made in this repository are also distributed under the Apache
-License, Version 2.0. See LICENSE for the complete terms.
+The corresponding official Beatbot integration used for the feature comparison
+in this repository is commit b9bfe125321f1fce9d96b202fef5e582a5d7b1f6:
+https://github.com/Beatbot-Robotics/ha_beatbot
+
+Home Assistant Core and the referenced Core contribution are licensed under the
+Apache License, Version 2.0. Modifications made in this repository are also
+distributed under the Apache License, Version 2.0. See LICENSE for the complete
+terms.
 
 The integration uses the separately distributed beatbot-cloud Python package.
 Beatbot names, product names, and logos are trademarks of their respective
