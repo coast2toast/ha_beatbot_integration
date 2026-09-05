@@ -33,25 +33,30 @@ accepted category and one of the verified product IDs below.
 | `clean_base_station` | Supported when the product ID is verified | Base-station state and advertised controls, status, errors, online state, and capability-dependent controls |
 | `lawn_mower` | Not currently supported | Reserved mappings exist, but this category is not accepted during discovery |
 
-Verified cloud product IDs:
+Verified cloud products:
 
-```text
-sblekiy3t188s9ql
-khepk01dtgj3udq0
-xvwp9zj6bgsmk9tv
-8fbwsy7h49c8hrzy
-0sjj9a0jwq8z3ljz
-s34unj9n9wfo737h
-d0jf1j3bl6ql94g1
-tz8vjwgcdle3w2lj
-```
+| Marketing model | Cloud model | Cloud product ID | Model-name verification |
+| --- | --- | --- | --- |
+| Not yet identified | Not yet reported | `sblekiy3t188s9ql` | Product ID verified; marketing-name mapping still needed |
+| Not yet identified | Not yet reported | `khepk01dtgj3udq0` | Product ID verified; marketing-name mapping still needed |
+| [Sora 30](https://beatbot.com/pages/sora-30) | `M1` | `xvwp9zj6bgsmk9tv` | Model and product ID observed together in cloud discovery |
+| Not yet identified | Not yet reported | `8fbwsy7h49c8hrzy` | Product ID verified; marketing-name mapping still needed |
+| Not yet identified | Not yet reported | `0sjj9a0jwq8z3ljz` | Product ID verified; marketing-name mapping still needed |
+| Not yet identified | Not yet reported | `s34unj9n9wfo737h` | Product ID verified; marketing-name mapping still needed |
+| Not yet identified | Not yet reported | `d0jf1j3bl6ql94g1` | Product ID verified; marketing-name mapping still needed |
+| [iSkim](https://beatbot.com/products/iskim) | `V1` | `tz8vjwgcdle3w2lj` | Model and product ID observed together in cloud discovery |
 
-Marketing model names are supplied dynamically by the Beatbot cloud and appear
-on the Home Assistant device. A new model may therefore be omitted until its
-cloud product ID has been verified. To request support, open a GitHub issue with
-the model name, product category, and product ID from redacted diagnostics. Do
-not include OAuth tokens, account identifiers, device identifiers, or complete
-raw cloud responses.
+Beatbot does not publish a global mapping between these opaque product IDs and
+marketing names. The table therefore names only combinations observed together
+in actual cloud discovery; unconfirmed names are not inferred from the current
+product lineup. Marketing names and cloud-model codes are supplied dynamically
+and appear on the Home Assistant device when available.
+
+A new model may be omitted until its cloud product ID has been verified. To
+request support or complete an unidentified row, open a GitHub issue with the
+model name, cloud-model code, product category, and product ID from redacted
+diagnostics. Do not include OAuth tokens, account identifiers, device
+identifiers, or complete raw cloud responses.
 
 ## Supported functions
 
